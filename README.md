@@ -2,7 +2,7 @@
 
 A modern LinkedIn-inspired professional networking platform built using HTML, CSS, and Vanilla JavaScript.
 
-**Live:** {{LIVE_URL}}
+**Live:** https://hemasiva22.github.io/Linkedin_clone/
 **Source:** https://github.com/HEMASIVA22/Linkedin_clone
 
 > ⚠️ Educational UI clone for learning purposes only — not affiliated with LinkedIn. All names, posts and photos are sample content.
