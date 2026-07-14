@@ -75,11 +75,11 @@
               saveUsers(list);
               setUser(nu);
               toast("Welcome, " + name + "!", "success");
-              setTimeout(() => (location.href = "/home.html"), 400);
+              setTimeout(() => (location.href = "./home.html"), 400);
             } else {
               setUser(u);
               toast("Signed in", "success");
-              setTimeout(() => (location.href = "/home.html"), 300);
+              setTimeout(() => (location.href = "./home.html"), 300);
             }
           };
           document.getElementById("toSignup").onclick = (e) => {

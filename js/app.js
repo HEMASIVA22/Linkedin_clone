@@ -9,14 +9,14 @@
   window.setUser = (u) => LS.set(AUTH_KEY, u);
   window.logout = () => {
     LS.del(AUTH_KEY);
-    location.href = "/index.html";
+    location.href = "./index.html";
   };
 
   // Require auth on non-auth pages
   window.requireAuth = () => {
     const u = getUser();
     if (!u) {
-      location.href = "/index.html";
+      location.href = "./index.html";
       return null;
     }
     return u;
@@ -96,12 +96,12 @@
       (n) => !n.read,
     ).length;
     const links = [
-      ["home", "Home", "/home.html", ICON.home],
-      ["network", "My Network", "/network.html", ICON.network],
-      ["jobs", "Jobs", "/jobs.html", ICON.jobs],
-      ["messages", "Messaging", "/messages.html", ICON.msg],
-      ["notifications", "Notifications", "/notifications.html", ICON.bell],
-      ["videos", "Videos", "/videos.html", ICON.video],
+      ["home", "Home", "./home.html", ICON.home],
+      ["network", "My Network", "./network.html", ICON.network],
+      ["jobs", "Jobs", "./jobs.html", ICON.jobs],
+      ["messages", "Messaging", "./messages.html", ICON.msg],
+      ["notifications", "Notifications", "./notifications.html", ICON.bell],
+      ["videos", "Videos", "./videos.html", ICON.video],
     ];
     const linksHtml = links
       .map(
@@ -114,7 +114,7 @@
       .join("");
     return `
       <header class="nav"><div class="nav-inner">
-        <a class="brand" href="/home.html"><div class="brand-logo">in</div></a>
+        <a class="brand" href="./home.html"><div class="brand-logo">in</div></a>
         <div class="search">
           <span class="ic">${ICON.search}</span>
           <input id="globalSearch" placeholder="Search people, jobs, posts…" autocomplete="off"/>
@@ -122,10 +122,10 @@
         </div>
         <nav class="nav-links">
           ${linksHtml}
-          <a class="nav-link desktop-only" href="/profile.html">
+          <a class="nav-link desktop-only" href="./profile.html">
             <img class="avatar" src="${u.avatar}" alt=""/><span>Me</span>
           </a>
-          <a class="nav-link desktop-only" href="/settings.html" title="Settings">${ICON.gear}<span>Settings</span></a>
+          <a class="nav-link desktop-only" href="./settings.html" title="Settings">${ICON.gear}<span>Settings</span></a>
         </nav>
       </div></header>
       <nav class="mobile-nav"><div class="row">
@@ -216,7 +216,7 @@
           html += people
             .map(
               (p) =>
-                `<a class="row" href="/profile.html?u=${p.id}"><img class="avatar" style="width:32px;height:32px" src="${p.avatar}"/><div><b>${hl(p.name)}</b><div style="color:var(--muted);font-size:12px">${hl(p.role)} at ${hl(p.company)}</div></div></a>`,
+                `<a class="row" href="./profile.html?u=${p.id}"><img class="avatar" style="width:32px;height:32px" src="${p.avatar}"/><div><b>${hl(p.name)}</b><div style="color:var(--muted);font-size:12px">${hl(p.role)} at ${hl(p.company)}</div></div></a>`,
             )
             .join("");
         }
@@ -225,7 +225,7 @@
           html += jobs
             .map(
               (j) =>
-                `<a class="row" href="/jobs.html?j=${j.id}">${ICON.jobs}<div><b>${hl(j.title)}</b><div style="color:var(--muted);font-size:12px">${hl(j.company)} • ${j.location}</div></div></a>`,
+                `<a class="row" href="./jobs.html?j=${j.id}">${ICON.jobs}<div><b>${hl(j.title)}</b><div style="color:var(--muted);font-size:12px">${hl(j.company)} • ${j.location}</div></div></a>`,
             )
             .join("");
         }
