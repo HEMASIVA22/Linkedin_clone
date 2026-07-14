@@ -23,7 +23,7 @@
       (function () {
         // Auto-login redirect
         if (getUser()) {
-          location.replace("/home.html");
+          location.replace("./home.html");
           return;
         }
         const view = document.getElementById("view");
@@ -129,7 +129,7 @@
             saveUsers(list);
             setUser(u);
             toast("Account created", "success");
-            setTimeout(() => (location.href = "/home.html"), 300);
+            setTimeout(() => (location.href = "./home.html"), 300);
           };
           document.getElementById("toLogin").onclick = (e) => {
             e.preventDefault();
