@@ -58,9 +58,9 @@ window.Feed = (function () {
     const myR = p.myReaction ? rMap[p.myReaction] : null;
     return `<article class="card post" data-id="${p.id}">
       <div class="post-head">
-        <a href="./profile.html?u=${p.authorId}"><img src="${p.avatar}" alt=""/></a>
+        <a href="profile.html?u=${p.authorId}"><img src="${p.avatar}" alt=""/></a>
         <div class="post-meta">
-          <div class="post-author"><a href="./profile.html?u=${p.authorId}">${p.author}</a></div>
+          <div class="post-author"><a href="profile.html?u=${p.authorId}">${p.author}</a></div>
           <div class="post-role">${p.role} at ${p.company}</div>
           <div class="post-time">${p.time} · 🌐</div>
         </div>
