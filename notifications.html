@@ -26,23 +26,21 @@
       mountNav("notifications");
       const K = "lk.notif";
       if (!LS.get(K, null)) {
-        const seed = SEED.people
-          .slice(0, 6)
-          .map((p, i) => ({
-            id: "n" + i,
-            actor: p.name,
-            avatar: p.avatar,
-            text: [
-              "liked your post",
-              "commented on your post",
-              "started following you",
-              "viewed your profile",
-              "accepted your invitation",
-              "reposted your update",
-            ][i % 6],
-            time: ["2m", "1h", "3h", "1d", "2d", "5d"][i % 6],
-            read: i > 2,
-          }));
+        const seed = SEED.people.slice(0, 6).map((p, i) => ({
+          id: "n" + i,
+          actor: p.name,
+          avatar: p.avatar,
+          text: [
+            "liked your post",
+            "commented on your post",
+            "started following you",
+            "viewed your profile",
+            "accepted your invitation",
+            "reposted your update",
+          ][i % 6],
+          time: ["2m", "1h", "3h", "1d", "2d", "5d"][i % 6],
+          read: i > 2,
+        }));
         LS.set(K, seed);
       }
       function draw() {
