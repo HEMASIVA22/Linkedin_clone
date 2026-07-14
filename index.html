@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Linkd — Sign in</title>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <div class="brand" style="justify-content: center; margin-bottom: 16px">
+          <div class="brand-logo">in</div>
+          <span style="font-size: 20px">Linkd</span>
+        </div>
+        <div id="view"></div>
+      </div>
+    </div>
+    <script src="/js/data.js"></script>
+    <script src="/js/icons.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+      (function () {
+        // Auto-login redirect
+        if (getUser()) {
+          location.replace("/home.html");
+          return;
+        }
+        const view = document.getElementById("view");
+        const USERS_KEY = "lk.users";
+        const users = () => LS.get(USERS_KEY, []);
+        const saveUsers = (u) => LS.set(USERS_KEY, u);
+
+        function loginView() {
+          view.innerHTML = `
+      <h1>Welcome back</h1>
+      <p class="sub">Sign in to your professional network.</p>
+      <form id="f">
+        <label class="field"><span>Email</span><input type="email" name="email" required/></label>
+        <label class="field"><span>Password</span><input type="password" name="password" required minlength="4"/></label>
+        <button class="btn" type="submit">Sign in</button>
+      </form>
+      <div class="auth-foot"><a href="#" id="forgot">Forgot password?</a></div>
+      <div class="divider">or</div>
+      <div class="auth-foot">New to Linkd? <a href="#" id="toSignup">Join now</a></div>`;
+          document.getElementById("f").onsubmit = (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            const email = fd.get("email"),
+              pw = fd.get("password");
+            const u = users().find(
+              (x) => x.email === email && x.password === pw,
+            );
+            if (!u) {
+              // Auto create demo user for convenience
+              const name = email
+                .split("@")[0]
+                .replace(/[._-]/g, " ")
+                .replace(/\b\w/g, (c) => c.toUpperCase());
+              const nu = {
+                id: "me",
+                name,
+                email,
+                password: pw,
+                avatar: avatar(name),
+                headline: "Product Builder • Sharing thoughts on tech",
+                location: "Remote",
+                industry: "Software",
+                followers: 284,
+                connections: 512,
+                cover: coverImg(name),
+              };
+              const list = users();
+              list.push(nu);
+              saveUsers(list);
+              setUser(nu);
+              toast("Welcome, " + name + "!", "success");
+              setTimeout(() => (location.href = "/home.html"), 400);
+            } else {
+              setUser(u);
+              toast("Signed in", "success");
+              setTimeout(() => (location.href = "/home.html"), 300);
+            }
+          };
+          document.getElementById("toSignup").onclick = (e) => {
+            e.preventDefault();
+            signupView();
+          };
+          document.getElementById("forgot").onclick = (e) => {
+            e.preventDefault();
+            forgotView();
+          };
+        }
+        function signupView() {
+          view.innerHTML = `
+      <h1>Join Linkd</h1><p class="sub">Make the most of your professional life.</p>
+      <form id="f">
+        <label class="field"><span>Full name</span><input name="name" required/></label>
+        <label class="field"><span>Email</span><input type="email" name="email" required/></label>
+        <label class="field"><span>Password (6+ chars)</span><input type="password" name="password" required minlength="6"/></label>
+        <button class="btn" type="submit">Agree & Join</button>
+      </form>
+      <div class="auth-foot">Already on Linkd? <a href="#" id="toLogin">Sign in</a></div>`;
+          document.getElementById("f").onsubmit = (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            const name = fd.get("name"),
+              email = fd.get("email"),
+              pw = fd.get("password");
+            const list = users();
+            if (list.some((u) => u.email === email)) {
+              toast("Email already registered", "error");
+              return;
+            }
+            const u = {
+              id: "me",
+              name,
+              email,
+              password: pw,
+              avatar: avatar(name),
+              headline: "New to Linkd — building things.",
+              location: "Remote",
+              industry: "Software",
+              followers: 0,
+              connections: 0,
+              cover: coverImg(name),
+            };
+            list.push(u);
+            saveUsers(list);
+            setUser(u);
+            toast("Account created", "success");
+            setTimeout(() => (location.href = "/home.html"), 300);
+          };
+          document.getElementById("toLogin").onclick = (e) => {
+            e.preventDefault();
+            loginView();
+          };
+        }
+        function forgotView() {
+          view.innerHTML = `
+      <h1>Reset password</h1><p class="sub">Enter your email and we'll send reset instructions.</p>
+      <form id="f"><label class="field"><span>Email</span><input type="email" name="email" required/></label>
+      <button class="btn" type="submit">Send reset link</button></form>
+      <div class="auth-foot"><a href="#" id="back">Back to sign in</a></div>`;
+          document.getElementById("f").onsubmit = (e) => {
+            e.preventDefault();
+            toast("Reset link sent (demo)", "success");
+            setTimeout(loginView, 600);
+          };
+          document.getElementById("back").onclick = (e) => {
+            e.preventDefault();
+            loginView();
+          };
+        }
+        loginView();
+      })();
+    </script>
+  </body>
+</html>

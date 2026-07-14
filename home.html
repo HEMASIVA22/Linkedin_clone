@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Feed | Linkd</title>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <div id="nav"></div>
+    <main class="container grid-3">
+      <aside class="col-left">
+        <div class="card" id="sideProfile"></div>
+        <div class="card card-pad" style="margin-top: 12px">
+          <div style="font-weight: 700; margin-bottom: 8px">Recent</div>
+          <div id="recent" style="font-size: 13px; color: var(--muted)"></div>
+        </div>
+      </aside>
+      <section class="col-mid">
+        <div class="card">
+          <div class="start-post">
+            <img id="spAvatar" alt="" />
+            <button id="openCompose">Start a post</button>
+          </div>
+          <div class="start-actions">
+            <button class="chip blue" data-kind="Image">
+              ${''}<span>Photo</span>
+            </button>
+            <button class="chip green" data-kind="Video">
+              <span>Video</span>
+            </button>
+            <button class="chip orange" data-kind="Poll">
+              <span>Poll</span>
+            </button>
+            <button class="chip purple" data-kind="Article">
+              <span>Article</span>
+            </button>
+            <button class="chip red" data-kind="Event">
+              <span>Event</span>
+            </button>
+          </div>
+        </div>
+        <div id="feed"></div>
+        <div id="skel"></div>
+      </section>
+      <aside class="col-right">
+        <div class="card">
+          <div class="rail-title">Add to your feed</div>
+          <div id="rail"></div>
+        </div>
+        <div class="card" style="margin-top: 12px">
+          <div class="rail-title">Trending</div>
+          <div id="trend"></div>
+          <div class="pfoot">Linkd · © 2026</div>
+        </div>
+      </aside>
+    </main>
+    <script src="/js/data.js"></script>
+    <script src="/js/icons.js"></script>
+    <script src="/js/app.js"></script>
+    <script src="/js/feed.js"></script>
+    <script>
+      mountNav("home");
+      Feed.init();
+      // Sidebar profile
+      const me = getUser();
+      document.getElementById("sideProfile").innerHTML = `
+  <div class="side-cover" style="background-image:url('${me.cover || coverImg(me.name)}');background-size:cover"></div>
+  <div class="side-body">
+    <img class="side-avatar" src="${me.avatar}" alt=""/>
+    <a href="/profile.html" class="side-name">${me.name}</a>
+    <div class="side-headline">${me.headline || ""}</div>
+    <div class="side-stats">
+      <div class="row"><span>Profile viewers</span><b>${me.views || 128}</b></div>
+      <div class="row"><span>Post impressions</span><b>${me.impressions || 1284}</b></div>
+      <div class="row"><span>Connections</span><b>${me.connections || 0}</b></div>
+    </div>
+  </div>`;
+      document.getElementById("spAvatar").src = me.avatar;
+      // Right rail suggestions
+      document.getElementById("rail").innerHTML = SEED.people
+        .slice(4, 8)
+        .map(
+          (p) => `
+  <div class="rail-item"><img src="${p.avatar}"/><div class="info"><b>${p.name}</b><span>${p.role}</span></div>
+  <button class="btn outline" data-follow="${p.id}">+ Follow</button></div>`,
+        )
+        .join("");
+      document.getElementById("rail").addEventListener("click", (e) => {
+        const b = e.target.closest("[data-follow]");
+        if (!b) return;
+        b.classList.toggle("following");
+        b.textContent = b.classList.contains("following")
+          ? "Following"
+          : "+ Follow";
+        toast("Follow updated");
+      });
+      document.getElementById("trend").innerHTML = SEED.hashtags
+        .slice(0, 6)
+        .map(
+          (h) => `
+  <div class="rail-item"><div class="ic" style="width:40px;height:40px;border-radius:8px;background:var(--surface-2);display:grid;place-items:center;font-weight:800">#</div>
+  <div class="info"><b>${h}</b><span>${Math.floor(Math.random() * 20 + 3)}k posts</span></div></div>`,
+        )
+        .join("");
+      // Recent
+      document.getElementById("recent").innerHTML = [
+        "Product Managers",
+        "Startup Founders",
+        "JavaScript",
+        "Design Systems",
+        "Remote Work",
+      ]
+        .map((g) => `<div style="padding:4px 0">${"#"} ${g}</div>`)
+        .join("");
+
+      // Compose triggers
+      document.getElementById("openCompose").onclick = () => Feed.compose();
+      document
+        .querySelectorAll(".start-actions .chip")
+        .forEach((b) => (b.onclick = () => Feed.compose(b.dataset.kind)));
+    </script>
+  </body>
+</html>

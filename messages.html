@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Messages | Linkd</title>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <div id="nav"></div>
+    <main class="container" style="max-width: 1100px">
+      <div class="card">
+        <div class="msg-lay" id="lay">
+          <div class="msg-list">
+            <div class="msg-search">
+              <input id="mq" placeholder="Search messages" />
+            </div>
+            <div class="msg-contacts" id="contacts"></div>
+          </div>
+          <div class="msg-chat">
+            <div class="msg-head" id="mh"></div>
+            <div class="msg-body" id="mb"></div>
+            <form class="msg-input" id="mi">
+              <input
+                id="mt"
+                placeholder="Write a message…"
+                autocomplete="off"
+              /><button class="btn" type="submit">Send</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </main>
+    <script src="/js/data.js"></script>
+    <script src="/js/icons.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+      mountNav("messages");
+      const K = "lk.msgs";
+      const me = getUser();
+      const contacts = SEED.people.slice(0, 10);
+      if (!LS.get(K, null)) {
+        const seed = {};
+        contacts.forEach(
+          (c, i) =>
+            (seed[c.id] = [
+              {
+                id: "m1",
+                from: c.id,
+                text: "Hey! Great to connect.",
+                time: "1d",
+                read: true,
+              },
+              {
+                id: "m2",
+                from: "me",
+                text: "Likewise — really enjoyed your recent post.",
+                time: "1d",
+                read: true,
+              },
+              {
+                id: "m3",
+                from: c.id,
+                text: "Thanks! Would love to chat sometime this week.",
+                time: "5h",
+                read: i > 2,
+              },
+            ]),
+        );
+        LS.set(K, seed);
+      }
+      let sel = contacts[0].id;
+      function draw() {
+        const q = document.getElementById("mq").value.toLowerCase();
+        const all = LS.get(K, {});
+        document.getElementById("contacts").innerHTML = contacts
+          .filter((c) => c.name.toLowerCase().includes(q))
+          .map((c) => {
+            const msgs = all[c.id] || [];
+            const last = msgs[msgs.length - 1] || { text: "" };
+            return `<div class="msg-contact ${c.id === sel ? "active" : ""}" data-id="${c.id}"><div class="av"><img src="${c.avatar}"/>${c.online ? '<span class="dot"></span>' : ""}</div><div class="info"><b>${c.name}</b><div class="last">${last.text}</div></div></div>`;
+          })
+          .join("");
+        const c = contacts.find((x) => x.id === sel);
+        document.getElementById("mh").innerHTML =
+          `<img src="${c.avatar}"/><div><b>${c.name}</b><div style="color:var(--muted);font-size:12px">${c.online ? "● Active now" : "Offline"}</div></div>`;
+        const msgs = all[c.id] || [];
+        document.getElementById("mb").innerHTML = msgs
+          .map(
+            (m) =>
+              `<div class="bubble ${m.from === "me" ? "me" : ""}" data-mid="${m.id}">${m.text}<div class="t">${m.time}${m.from === "me" ? " · " + (m.read ? "✓✓" : "✓") : ""}</div><button class="del" data-del="${m.id}">✕</button></div>`,
+          )
+          .join("");
+        document.getElementById("mb").scrollTop = 99999;
+        // mark read
+        msgs.forEach((m) => {
+          if (m.from !== "me") m.read = true;
+        });
+        all[c.id] = msgs;
+        LS.set(K, all);
+        document
+          .getElementById("lay")
+          .classList.toggle("chat-open", window.innerWidth <= 768);
+      }
+      document.getElementById("contacts").addEventListener("click", (e) => {
+        const c = e.target.closest("[data-id]");
+        if (c) {
+          sel = c.dataset.id;
+          draw();
+        }
+      });
+      document.getElementById("mb").addEventListener("click", (e) => {
+        const d = e.target.closest("[data-del]");
+        if (!d) return;
+        const all = LS.get(K, {});
+        all[sel] = all[sel].filter((m) => m.id !== d.dataset.del);
+        LS.set(K, all);
+        draw();
+      });
+      document.getElementById("mi").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const t = document.getElementById("mt").value.trim();
+        if (!t) return;
+        const all = LS.get(K, {});
+        (all[sel] = all[sel] || []).push({
+          id: "m" + Date.now(),
+          from: "me",
+          text: t,
+          time: "now",
+          read: false,
+        });
+        LS.set(K, all);
+        document.getElementById("mt").value = "";
+        draw();
+        setTimeout(() => {
+          all[sel].push({
+            id: "m" + Date.now(),
+            from: sel,
+            text: "Got it — thanks!",
+            time: "now",
+            read: true,
+          });
+          LS.set(K, all);
+          draw();
+          addNotif({
+            actor: contacts.find((c) => c.id === sel).name,
+            avatar: contacts.find((c) => c.id === sel).avatar,
+            text: "sent you a new message",
+          });
+        }, 1200);
+      });
+      document.getElementById("mq").addEventListener("input", draw);
+      draw();
+    </script>
+  </body>
+</html>

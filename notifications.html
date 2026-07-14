@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Notifications | Linkd</title>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <div id="nav"></div>
+    <main class="container" style="max-width: 800px">
+      <div class="card">
+        <div class="section-title">
+          Notifications
+          <div>
+            <button class="btn ghost" id="markAll">Mark all as read</button>
+          </div>
+        </div>
+        <div id="nl"></div>
+      </div>
+    </main>
+    <script src="/js/data.js"></script>
+    <script src="/js/icons.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+      mountNav("notifications");
+      const K = "lk.notif";
+      if (!LS.get(K, null)) {
+        const seed = SEED.people
+          .slice(0, 6)
+          .map((p, i) => ({
+            id: "n" + i,
+            actor: p.name,
+            avatar: p.avatar,
+            text: [
+              "liked your post",
+              "commented on your post",
+              "started following you",
+              "viewed your profile",
+              "accepted your invitation",
+              "reposted your update",
+            ][i % 6],
+            time: ["2m", "1h", "3h", "1d", "2d", "5d"][i % 6],
+            read: i > 2,
+          }));
+        LS.set(K, seed);
+      }
+      function draw() {
+        const list = LS.get(K, []);
+        document.getElementById("nl").innerHTML = list.length
+          ? list
+              .map(
+                (n) => `
+    <div class="notif ${n.read ? "" : "unread"}" data-id="${n.id}"><img src="${n.avatar || avatar(n.actor || "X")}"/>
+    <div class="info"><div><b>${n.actor || ""}</b> ${n.text}</div><div class="t">${n.time}</div></div>
+    <button class="icon-btn x" data-del="${n.id}">${ICON.x}</button></div>`,
+              )
+              .join("")
+          : `<div class="empty">You're all caught up.</div>`;
+      }
+      document.getElementById("nl").addEventListener("click", (e) => {
+        const d = e.target.closest("[data-del]");
+        if (d) {
+          LS.set(
+            K,
+            LS.get(K, []).filter((n) => n.id !== d.dataset.del),
+          );
+          draw();
+          return;
+        }
+        const it = e.target.closest("[data-id]");
+        if (it) {
+          const l = LS.get(K, []);
+          const n = l.find((x) => x.id === it.dataset.id);
+          if (n) {
+            n.read = true;
+            LS.set(K, l);
+            draw();
+          }
+        }
+      });
+      document.getElementById("markAll").onclick = () => {
+        const l = LS.get(K, []);
+        l.forEach((n) => (n.read = true));
+        LS.set(K, l);
+        draw();
+        toast("All marked as read");
+      };
+      draw();
+    </script>
+  </body>
+</html>

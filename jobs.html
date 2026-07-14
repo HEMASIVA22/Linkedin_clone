@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Jobs | Linkd</title>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <div id="nav"></div>
+    <main class="container" style="max-width: 1100px">
+      <div class="card">
+        <div class="filters">
+          <input id="q" placeholder="Search jobs…" />
+          <select id="ft">
+            <option>Any type</option>
+            <option>Full-time</option>
+            <option>Part-time</option>
+            <option>Contract</option>
+          </select>
+          <select id="fl">
+            <option>Any location</option>
+            <option>Remote</option>
+            <option>New York</option>
+            <option>San Francisco</option>
+            <option>Barcelona</option>
+          </select>
+          <button class="btn ghost" id="showSaved">★ Saved</button>
+        </div>
+        <div class="jobs-lay">
+          <div id="jobList"></div>
+          <div
+            id="jobDetail"
+            class="card"
+            style="border: 0; box-shadow: none"
+          ></div>
+        </div>
+      </div>
+    </main>
+    <script src="/js/data.js"></script>
+    <script src="/js/icons.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+      mountNav("jobs");
+      const K = "lk.jobs";
+      if (!LS.get(K, null)) LS.set(K, SEED.jobs);
+      let all = LS.get(K, []),
+        sel = all[0].id,
+        onlySaved = false;
+      function draw() {
+        const q = document.getElementById("q").value.toLowerCase(),
+          t = document.getElementById("ft").value,
+          l = document.getElementById("fl").value;
+        const list = all.filter(
+          (j) =>
+            (!q ||
+              j.title.toLowerCase().includes(q) ||
+              j.company.toLowerCase().includes(q)) &&
+            (t === "Any type" || j.type === t) &&
+            (l === "Any location" || j.location === l) &&
+            (!onlySaved || j.saved),
+        );
+        document.getElementById("jobList").innerHTML =
+          list
+            .map(
+              (j) => `
+    <div class="job-item ${j.id === sel ? "active" : ""}" data-id="${j.id}">
+      <div class="logo">${j.company[0]}</div>
+      <div class="info"><b>${j.title}</b><div class="co">${j.company}</div><div class="lo">${j.location} · ${j.posted} ago</div></div>
+      <button class="icon-btn" data-save="${j.id}" title="Save">${j.saved ? "★" : "☆"}</button>
+    </div>`,
+            )
+            .join("") || '<div class="empty">No jobs match</div>';
+        drawDetail();
+      }
+      function drawDetail() {
+        const j = all.find((x) => x.id === sel);
+        if (!j) {
+          document.getElementById("jobDetail").innerHTML = "";
+          return;
+        }
+        document.getElementById("jobDetail").innerHTML =
+          `<div class="job-detail">
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px"><div class="logo" style="width:56px;height:56px;border-radius:8px;background:var(--primary);color:#fff;display:grid;place-items:center;font-weight:800">${j.company[0]}</div><div><h2>${j.title}</h2><div class="meta">${j.company} · ${j.location}</div></div></div>
+    <div class="meta">${j.type} · ${j.salary} · Posted ${j.posted} ago</div>
+    <div style="display:flex;gap:8px;margin:12px 0"><button class="btn" data-apply="${j.id}">${j.applied ? "Applied ✓" : "Easy Apply"}</button><button class="btn outline" data-save2="${j.id}">${j.saved ? "★ Saved" : "☆ Save"}</button></div>
+    <h3>About this role</h3><p>${j.desc}</p>
+    <h3>What we're looking for</h3><ul><li>Strong communication</li><li>Ownership mindset</li><li>Deep craft in your discipline</li></ul>
+  </div>`;
+      }
+      document.getElementById("jobList").addEventListener("click", (e) => {
+        const s = e.target.closest("[data-save]");
+        if (s) {
+          const j = all.find((x) => x.id === s.dataset.save);
+          j.saved = !j.saved;
+          LS.set(K, all);
+          draw();
+          toast(j.saved ? "Saved" : "Removed");
+          return;
+        }
+        const it = e.target.closest(".job-item");
+        if (it) {
+          sel = it.dataset.id;
+          draw();
+        }
+      });
+      document.getElementById("jobDetail").addEventListener("click", (e) => {
+        const a = e.target.closest("[data-apply]");
+        if (a) {
+          const j = all.find((x) => x.id === a.dataset.apply);
+          j.applied = true;
+          LS.set(K, all);
+          toast("Application submitted", "success");
+          addNotif({
+            actor: j.company,
+            avatar: avatar(j.company),
+            text: `Applied to ${j.title} at ${j.company}`,
+          });
+          drawDetail();
+        }
+        const s = e.target.closest("[data-save2]");
+        if (s) {
+          const j = all.find((x) => x.id === s.dataset.save2);
+          j.saved = !j.saved;
+          LS.set(K, all);
+          draw();
+        }
+      });
+      ["q", "ft", "fl"].forEach((id) =>
+        document.getElementById(id).addEventListener("input", draw),
+      );
+      document.getElementById("showSaved").onclick = (e) => {
+        onlySaved = !onlySaved;
+        e.target.classList.toggle("active");
+        draw();
+      };
+      const qp = new URLSearchParams(location.search).get("j");
+      if (qp) sel = qp;
+      draw();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Settings | Linkd</title>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <div id="nav"></div>
+    <main class="container" style="max-width: 1000px">
+      <div class="settings-lay">
+        <aside class="card card-pad settings-nav" id="snav"></aside>
+        <section class="card settings-panel" id="spanel"></section>
+      </div>
+    </main>
+    <script src="/js/data.js"></script>
+    <script src="/js/icons.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+      mountNav("");
+      const K = "lk.settings";
+      const defaults = {
+        theme: "light",
+        lang: "English",
+        feedOrder: "Top posts",
+        autoplay: true,
+        sound: true,
+        showPhoto: true,
+        showActive: true,
+        whoView: "Everyone",
+        whoMsg: "Connections only",
+        email: getUser().email || "",
+        phone: "",
+        subscription: "Free",
+      };
+      const s = { ...defaults, ...LS.get(K, {}) };
+      function save() {
+        LS.set(K, s);
+        applyTheme(s.theme);
+        LS.set("lk.theme", s.theme);
+      }
+      save();
+
+      const tabs = [
+        ["appearance", "Appearance"],
+        ["language", "Language"],
+        ["feed", "Feed preferences"],
+        ["video", "Video"],
+        ["profile", "Profile"],
+        ["privacy", "Privacy"],
+        ["account", "Account"],
+        ["subscription", "Subscription"],
+        ["payment", "Payment methods"],
+      ];
+      let tab = "appearance";
+      function drawNav() {
+        document.getElementById("snav").innerHTML = tabs
+          .map(
+            ([k, l]) =>
+              `<a class="item ${k === tab ? "active" : ""}" data-t="${k}">${l}</a>`,
+          )
+          .join("");
+      }
+      function row(k, d, ctrl) {
+        return `<div class="row"><div><div class="k">${k}</div><div class="d">${d}</div></div>${ctrl}</div>`;
+      }
+      function sw(v, name) {
+        return `<div class="switch ${v ? "on" : ""}" data-sw="${name}"></div>`;
+      }
+      function sel(v, opts, name) {
+        return `<select data-set="${name}">${opts.map((o) => `<option ${o === v ? "selected" : ""}>${o}</option>`).join("")}</select>`;
+      }
+      function txt(v, name, type = "text") {
+        return `<input type="${type}" data-set="${name}" value="${v || ""}"/>`;
+      }
+
+      function drawPanel() {
+        let html = "";
+        if (tab === "appearance") {
+          html += row(
+            "Theme",
+            "Choose light or dark mode",
+            sel(s.theme, ["light", "dark"], "theme"),
+          );
+        }
+        if (tab === "language") {
+          html += row(
+            "Language",
+            "Applied instantly across the app",
+            sel(
+              s.lang,
+              ["English", "Tamil", "Hindi", "Spanish", "French"],
+              "lang",
+            ),
+          );
+        }
+        if (tab === "feed") {
+          html += row(
+            "Sort order",
+            "How posts are ranked",
+            sel(s.feedOrder, ["Top posts", "Most recent"], "feedOrder"),
+          );
+        }
+        if (tab === "video") {
+          html +=
+            row(
+              "Autoplay",
+              "Play videos automatically",
+              sw(s.autoplay, "autoplay"),
+            ) + row("Sound effects", "Play UI sounds", sw(s.sound, "sound"));
+        }
+        if (tab === "profile") {
+          html +=
+            row(
+              "Show profile photo",
+              "Others can see your photo",
+              sw(s.showPhoto, "showPhoto"),
+            ) +
+            row(
+              "Show activity status",
+              "Others see when you're active",
+              sw(s.showActive, "showActive"),
+            );
+        }
+        if (tab === "privacy") {
+          html +=
+            row(
+              "Who can view your profile",
+              "",
+              sel(
+                s.whoView,
+                ["Everyone", "Connections only", "Only me"],
+                "whoView",
+              ),
+            ) +
+            row(
+              "Who can message you",
+              "",
+              sel(
+                s.whoMsg,
+                ["Everyone", "Connections only", "Nobody"],
+                "whoMsg",
+              ),
+            );
+        }
+        if (tab === "account") {
+          html +=
+            row("Email", "", txt(s.email, "email", "email")) +
+            row("Phone", "", txt(s.phone, "phone")) +
+            row(
+              "Password",
+              "",
+              `<button class="btn outline" id="chgPw">Change</button>`,
+            ) +
+            row(
+              "Log out",
+              "",
+              `<button class="btn ghost" id="lo">Log out</button>`,
+            );
+        }
+        if (tab === "subscription") {
+          html += `<div class="row"><div><div class="k">Linkd Premium</div><div class="d">Insights, InMail, learning courses</div></div><span class="otw-badge">${s.subscription}</span></div><div class="row"><div class="d">Upgrade to unlock premium features.</div><button class="btn" id="upg">Upgrade</button></div>`;
+        }
+        if (tab === "payment") {
+          html += `<div class="row"><div><div class="k">•••• •••• •••• 4242</div><div class="d">Visa · Exp 12/28</div></div><button class="btn ghost">Remove</button></div><div class="row"><div class="d">Add a new payment method (demo)</div><button class="btn outline" id="addPm">+ Add card</button></div>`;
+        }
+        document.getElementById("spanel").innerHTML = html;
+        wirePanel();
+      }
+      function wirePanel() {
+        document.querySelectorAll("[data-sw]").forEach(
+          (el) =>
+            (el.onclick = () => {
+              const n = el.dataset.sw;
+              s[n] = !s[n];
+              save();
+              drawPanel();
+              toast("Saved");
+            }),
+        );
+        document.querySelectorAll("[data-set]").forEach((el) =>
+          el.addEventListener("change", () => {
+            s[el.dataset.set] = el.value;
+            save();
+            toast("Saved");
+            if (el.dataset.set === "theme") location.reload();
+          }),
+        );
+        const pw = document.getElementById("chgPw");
+        if (pw)
+          pw.onclick = () => {
+            const n = prompt("New password (min 6)");
+            if (n && n.length >= 6) {
+              const me = getUser();
+              me.password = n;
+              setUser(me);
+              toast("Password updated", "success");
+            }
+          };
+        const lo = document.getElementById("lo");
+        if (lo) lo.onclick = logout;
+        const upg = document.getElementById("upg");
+        if (upg)
+          upg.onclick = () => {
+            s.subscription = "Premium";
+            save();
+            drawPanel();
+            toast("Upgraded to Premium ⭐", "success");
+          };
+        const ap = document.getElementById("addPm");
+        if (ap) ap.onclick = () => toast("Card added (demo)", "success");
+      }
+      document.getElementById("snav").addEventListener("click", (e) => {
+        const t = e.target.closest("[data-t]");
+        if (t) {
+          tab = t.dataset.t;
+          drawNav();
+          drawPanel();
+        }
+      });
+      drawNav();
+      drawPanel();
+    </script>
+  </body>
+</html>

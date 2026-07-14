@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>My Network | Linkd</title>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <div id="nav"></div>
+    <main class="container" style="max-width: 1000px">
+      <div class="card">
+        <div class="nw-tabs" id="tabs">
+          <button class="nw-tab active" data-tab="invitations">
+            Invitations
+          </button>
+          <button class="nw-tab" data-tab="connections">Connections</button>
+          <button class="nw-tab" data-tab="followers">Followers</button>
+          <button class="nw-tab" data-tab="following">Following</button>
+          <button class="nw-tab" data-tab="suggest">People you may know</button>
+        </div>
+        <div id="nwBody"></div>
+      </div>
+    </main>
+    <script src="/js/data.js"></script>
+    <script src="/js/icons.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+      mountNav("network");
+      const K = {
+        inv: "lk.invitations",
+        con: "lk.connections",
+        fol: "lk.followers",
+        folw: "lk.following",
+      };
+      if (!LS.get(K.inv, null))
+        LS.set(
+          K.inv,
+          SEED.people.slice(10, 16).map((p) => ({ ...p })),
+        );
+      if (!LS.get(K.con, null))
+        LS.set(
+          K.con,
+          SEED.people.slice(0, 8).map((p) => ({ ...p })),
+        );
+      if (!LS.get(K.fol, null))
+        LS.set(
+          K.fol,
+          SEED.people.slice(2, 10).map((p) => ({ ...p })),
+        );
+      if (!LS.get(K.folw, null))
+        LS.set(
+          K.folw,
+          SEED.people.slice(6, 12).map((p) => ({ ...p })),
+        );
+
+      let tab = "invitations";
+      function draw() {
+        const body = document.getElementById("nwBody");
+        document
+          .querySelectorAll(".nw-tab")
+          .forEach((t) => t.classList.toggle("active", t.dataset.tab === tab));
+        const map = {
+          invitations: K.inv,
+          connections: K.con,
+          followers: K.fol,
+          following: K.folw,
+        };
+        if (tab === "suggest") {
+          const known = new Set(LS.get(K.con, []).map((x) => x.id));
+          const list = SEED.people.filter((p) => !known.has(p.id));
+          body.innerHTML = `<div class="nw-grid">${list.map((p) => card(p, "connect")).join("")}</div>`;
+        } else {
+          const list = LS.get(map[tab], []);
+          if (!list.length) {
+            body.innerHTML = `<div class="empty">Nothing here yet.</div>`;
+            return;
+          }
+          body.innerHTML = `<div class="nw-grid">${list.map((p) => card(p, tab)).join("")}</div>`;
+        }
+        body
+          .querySelectorAll("[data-act]")
+          .forEach(
+            (b) => (b.onclick = () => action(b.dataset.act, b.dataset.id)),
+          );
+      }
+      function card(p, mode) {
+        let actions = "";
+        if (mode === "invitations")
+          actions = `<div style="display:flex;gap:6px;padding:0 12px 12px"><button class="btn ghost" style="flex:1" data-act="reject" data-id="${p.id}">Ignore</button><button class="btn" style="flex:1" data-act="accept" data-id="${p.id}">Accept</button></div>`;
+        else if (mode === "connections")
+          actions = `<button class="btn outline" data-act="remove" data-id="${p.id}">Remove</button>`;
+        else if (mode === "followers")
+          actions = `<button class="btn" data-act="followback" data-id="${p.id}">Follow back</button>`;
+        else if (mode === "following")
+          actions = `<button class="btn outline" data-act="unfollow" data-id="${p.id}">Following</button>`;
+        else
+          actions = `<button class="btn outline" data-act="connect" data-id="${p.id}">+ Connect</button>`;
+        return `<div class="nw-card"><button class="x" data-act="dismiss" data-id="${p.id}">✕</button><div class="cov"></div><img src="${p.avatar}"/><div class="n">${p.name}</div><div class="h">${p.role}</div>${actions}</div>`;
+      }
+      function action(act, id) {
+        const move = (from, to) => {
+          const f = LS.get(from, []),
+            t = LS.get(to, []);
+          const x = f.find((p) => p.id === id);
+          if (x) {
+            LS.set(
+              from,
+              f.filter((p) => p.id !== id),
+            );
+            if (to) LS.set(to, [x, ...t]);
+          }
+        };
+        if (act === "accept") {
+          move(K.inv, K.con);
+          toast("Connection added", "success");
+        } else if (act === "reject" || act === "dismiss") {
+          move(K.inv, null);
+        } else if (act === "remove") {
+          if (confirm("Remove?")) move(K.con, null);
+        } else if (act === "followback") {
+          const p = SEED.people.find((x) => x.id === id);
+          LS.set(K.folw, [p, ...LS.get(K.folw, [])]);
+          toast("Following");
+        } else if (act === "unfollow") {
+          LS.set(
+            K.folw,
+            LS.get(K.folw, []).filter((p) => p.id !== id),
+          );
+        } else if (act === "connect") {
+          const p = SEED.people.find((x) => x.id === id);
+          LS.set(K.inv, [p, ...LS.get(K.inv, [])]);
+          toast("Invitation sent", "success");
+        }
+        draw();
+      }
+      document.getElementById("tabs").addEventListener("click", (e) => {
+        const t = e.target.closest(".nw-tab");
+        if (t) {
+          tab = t.dataset.tab;
+          draw();
+        }
+      });
+      draw();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Videos | Linkd</title>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <div id="nav"></div>
+    <main class="container">
+      <div class="vid-feed" id="vf"></div>
+    </main>
+    <script src="/js/data.js"></script>
+    <script src="/js/icons.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+      mountNav("videos");
+      const vids = [
+        "https://cdn.pixabay.com/video/2020/07/30/45960-448781098_tiny.mp4",
+        "https://cdn.pixabay.com/video/2019/11/24/29408-375259931_tiny.mp4",
+        "https://cdn.pixabay.com/video/2021/09/28/89823-616787286_tiny.mp4",
+        "https://cdn.pixabay.com/video/2020/03/03/33194-397142929_tiny.mp4",
+      ];
+      const feed = document.getElementById("vf");
+      vids.forEach((src, i) => {
+        const p = SEED.people[i % SEED.people.length];
+        const el = document.createElement("div");
+        el.className = "vid-card";
+        el.innerHTML = `
+    <video src="${src}" muted loop playsinline></video>
+    <div class="vid-controls"><button data-mute>🔇</button><button data-play>▶</button></div>
+    <div class="vid-overlay">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><img src="${p.avatar}" style="width:36px;height:36px;border-radius:50%"/><div><b>${p.name}</b><div style="opacity:.85;font-size:12px">${p.role}</div></div></div>
+      <div>${["Behind the scenes of our latest launch 🚀", "Quick thoughts on scaling teams.", "3 lessons after 10 years shipping product.", "Career advice I wish I heard earlier."][i % 4]} #videos</div>
+    </div>
+    <div class="vid-actions">
+      <button data-act="like"><span data-heart>♡</span><span data-count>${20 + i * 11}</span></button>
+      <button data-act="comment">💬<span>${5 + i}</span></button>
+      <button data-act="share">↗<span>${2 + i}</span></button>
+    </div>`;
+        feed.appendChild(el);
+        const v = el.querySelector("video");
+        const io = new IntersectionObserver(
+          (es) => {
+            es.forEach((en) => {
+              if (en.isIntersecting) v.play().catch(() => {});
+              else v.pause();
+            });
+          },
+          { threshold: 0.6 },
+        );
+        io.observe(el);
+        el.querySelector("[data-mute]").onclick = () => {
+          v.muted = !v.muted;
+          el.querySelector("[data-mute]").textContent = v.muted ? "🔇" : "🔊";
+        };
+        el.querySelector("[data-play]").onclick = () => {
+          if (v.paused) {
+            v.play();
+            el.querySelector("[data-play]").textContent = "⏸";
+          } else {
+            v.pause();
+            el.querySelector("[data-play]").textContent = "▶";
+          }
+        };
+        el.addEventListener("click", (e) => {
+          const b = e.target.closest("[data-act]");
+          if (!b) return;
+          if (b.dataset.act === "like") {
+            const h = b.querySelector("[data-heart]");
+            const c = b.querySelector("[data-count]");
+            const on = h.textContent === "♥";
+            h.textContent = on ? "♡" : "♥";
+            h.style.color = on ? "#fff" : "#ff5a7a";
+            c.textContent = +c.textContent + (on ? -1 : 1);
+          }
+          if (b.dataset.act === "comment") {
+            toast("Comments (demo)");
+          }
+          if (b.dataset.act === "share") {
+            toast("Share sheet opened", "success");
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Profile | Linkd</title>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <div id="nav"></div>
+    <main class="container" style="max-width: 900px">
+      <div class="card">
+        <div class="p-cover" id="cover">
+          <div class="edit">✎ Edit banner</div>
+        </div>
+        <div class="p-head">
+          <img class="p-avatar" id="pAv" />
+          <div class="p-row">
+            <div>
+              <h1 class="p-name" id="pName"></h1>
+              <div class="p-headline" id="pHead"></div>
+              <div class="p-loc" id="pLoc"></div>
+              <div class="p-stats">
+                <span id="pConn"></span> connections ·
+                <span id="pFol"></span> followers
+              </div>
+              <div id="otwWrap"></div>
+            </div>
+            <div class="p-actions">
+              <button class="btn" id="btnEdit">Edit profile</button>
+              <button class="btn outline" id="btnOTW">Open to work</button>
+              <button class="btn ghost" id="btnLogout">Log out</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Analytics</div>
+        <div class="chart-wrap">
+          <div class="chart-grid" id="stats"></div>
+          <canvas id="chart" width="600" height="180"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">
+          Experience <button class="add" data-add="exp">+ Add</button>
+        </div>
+        <div id="expList"></div>
+      </div>
+      <div class="card">
+        <div class="section-title">
+          Education <button class="add" data-add="edu">+ Add</button>
+        </div>
+        <div id="eduList"></div>
+      </div>
+      <div class="card">
+        <div class="section-title">
+          Skills <button class="add" data-add="skill">+ Add</button>
+        </div>
+        <div class="card-pad" id="skillList"></div>
+      </div>
+      <div class="card">
+        <div class="section-title">Interests</div>
+        <div class="card-pad" id="interests"></div>
+      </div>
+    </main>
+    <script src="/js/data.js"></script>
+    <script src="/js/icons.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+      mountNav("");
+      const me = getUser();
+      document.getElementById("cover").style.cssText =
+        `background-image:url('${me.cover || coverImg(me.name)}');background-size:cover`;
+      document.getElementById("pAv").src = me.avatar;
+      document.getElementById("pName").textContent = me.name;
+      document.getElementById("pHead").textContent = me.headline || "";
+      document.getElementById("pLoc").textContent =
+        (me.location || "") + " · " + (me.industry || "");
+      document.getElementById("pConn").textContent = me.connections || 0;
+      document.getElementById("pFol").textContent = me.followers || 0;
+      const otwWrap = document.getElementById("otwWrap");
+      const renderOTW = () =>
+        (otwWrap.innerHTML = me.openToWork
+          ? `<span class="otw-badge">#OpenToWork</span>`
+          : "");
+      renderOTW();
+
+      document.getElementById("cover").onclick = () => {
+        me.cover = coverImg(Math.random() + "");
+        setUser(me);
+        location.reload();
+      };
+      document.getElementById("pAv").onclick = () => {
+        const n = prompt("Change display name", me.name);
+        if (n) {
+          me.name = n;
+          me.avatar = avatar(n);
+          setUser(me);
+          location.reload();
+        }
+      };
+      document.getElementById("btnLogout").onclick = logout;
+      document.getElementById("btnOTW").onclick = () => {
+        me.openToWork = !me.openToWork;
+        setUser(me);
+        renderOTW();
+        toast(me.openToWork ? "Open to work enabled" : "Disabled");
+      };
+      document.getElementById("btnEdit").onclick = () => {
+        const wrap = document.createElement("div");
+        wrap.innerHTML = `<label class="field"><span>Name</span><input id="en" value="${me.name}"/></label>
+  <label class="field"><span>Headline</span><input id="eh" value="${me.headline || ""}"/></label>
+  <label class="field"><span>Location</span><input id="el" value="${me.location || ""}"/></label>
+  <label class="field"><span>Industry</span><input id="ei" value="${me.industry || ""}"/></label>`;
+        const foot = document.createElement("div");
+        foot.innerHTML = `<button class="btn" id="sv">Save</button>`;
+        const m = openModal(wrap, { title: "Edit profile", footer: foot });
+        foot.querySelector("#sv").onclick = () => {
+          me.name = wrap.querySelector("#en").value;
+          me.headline = wrap.querySelector("#eh").value;
+          me.location = wrap.querySelector("#el").value;
+          me.industry = wrap.querySelector("#ei").value;
+          me.avatar = avatar(me.name);
+          setUser(me);
+          toast("Saved", "success");
+          m.close();
+          location.reload();
+        };
+      };
+
+      // Analytics
+      const stats = [
+        ["Profile views", 842, +12, "up"],
+        ["Search appearances", 214, +8, "up"],
+        ["Post impressions", 5680, +34, "up"],
+        ["Engagement rate", "4.8%", -0.3, "dn"],
+        ["Followers growth", 128, +22, "up"],
+      ];
+      document.getElementById("stats").innerHTML = stats
+        .map(
+          ([k, v, d, u]) =>
+            `<div class="stat-card"><div class="k">${k}</div><div class="v">${v.toLocaleString ? v.toLocaleString() : v}</div><div class="d ${u}">${d > 0 ? "+" : ""}${d}${typeof d === "number" && Math.abs(d) < 10 ? "%" : ""} this week</div></div>`,
+        )
+        .join("");
+      // Chart
+      const ctx = document.getElementById("chart").getContext("2d"),
+        W = 600,
+        H = 180;
+      const data = [24, 38, 29, 52, 44, 67, 58, 79, 65, 82, 74, 96, 88, 110];
+      ctx.clearRect(0, 0, W, H);
+      const max = Math.max(...data),
+        pad = 20;
+      ctx.strokeStyle =
+        getComputedStyle(document.documentElement)
+          .getPropertyValue("--primary")
+          .trim() || "#0a66c2";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      data.forEach((v, i) => {
+        const x = pad + (i * (W - 2 * pad)) / (data.length - 1),
+          y = H - pad - (v / max) * (H - 2 * pad);
+        if (i) ctx.lineTo(x, y);
+        else ctx.moveTo(x, y);
+      });
+      ctx.stroke();
+      ctx.fillStyle = ctx.strokeStyle + "22";
+      ctx.lineTo(W - pad, H - pad);
+      ctx.lineTo(pad, H - pad);
+      ctx.closePath();
+      ctx.fill();
+
+      // CRUD sections
+      const KEY_EXP = "lk.exp",
+        KEY_EDU = "lk.edu",
+        KEY_SKILL = "lk.skill";
+      const defaultExp = [
+        {
+          id: "e1",
+          title: "Senior Product Engineer",
+          co: "Linkd",
+          dur: "2024 — Present",
+          desc: "Leading platform team.",
+        },
+      ];
+      const defaultEdu = [
+        {
+          id: "ed1",
+          school: "MIT",
+          deg: "B.S. Computer Science",
+          dur: "2016 — 2020",
+          desc: "",
+        },
+      ];
+      const defaultSkill = [
+        "JavaScript",
+        "React",
+        "Product Strategy",
+        "Leadership",
+        "System Design",
+      ];
+      function renderExp() {
+        const list = LS.get(KEY_EXP, defaultExp);
+        document.getElementById("expList").innerHTML =
+          list
+            .map(
+              (x) => `
+    <div class="list-item"><div class="ic">${x.co[0] || "?"}</div><div class="info"><b>${x.title}</b><div>${x.co}</div><div class="sub">${x.dur}</div><div>${x.desc || ""}</div></div>
+    <div class="actions"><button class="icon-btn" data-edit="${x.id}">${ICON.edit}</button><button class="icon-btn" data-del="${x.id}">${ICON.trash}</button></div></div>`,
+            )
+            .join("") || '<div class="empty">No experience yet</div>';
+      }
+      function renderEdu() {
+        const list = LS.get(KEY_EDU, defaultEdu);
+        document.getElementById("eduList").innerHTML =
+          list
+            .map(
+              (x) => `
+    <div class="list-item"><div class="ic">${x.school[0] || "?"}</div><div class="info"><b>${x.school}</b><div>${x.deg}</div><div class="sub">${x.dur}</div><div>${x.desc || ""}</div></div>
+    <div class="actions"><button class="icon-btn" data-edit-edu="${x.id}">${ICON.edit}</button><button class="icon-btn" data-del-edu="${x.id}">${ICON.trash}</button></div></div>`,
+            )
+            .join("") || '<div class="empty">No education yet</div>';
+      }
+      function renderSkills() {
+        const list = LS.get(KEY_SKILL, defaultSkill);
+        document.getElementById("skillList").innerHTML =
+          list
+            .map(
+              (s) =>
+                `<span class="skill-pill">${s} <span style="color:var(--muted);font-size:11px">·${Math.floor(Math.random() * 30) + 1} endorsements</span> <button data-skill-del="${s}">✕</button></span>`,
+            )
+            .join("") || '<div class="empty">No skills yet</div>';
+      }
+      renderExp();
+      renderEdu();
+      renderSkills();
+
+      document.getElementById("interests").innerHTML = `
+  <b>Companies</b><div style="margin:4px 0 12px">${["Stripe", "Figma", "OpenAI", "Notion"].map((c) => `<span class="skill-pill">${c}</span>`).join("")}</div>
+  <b>Hashtags</b><div style="margin:4px 0 12px">${SEED.hashtags
+    .slice(0, 6)
+    .map((h) => `<span class="skill-pill">${h}</span>`)
+    .join("")}</div>`;
+
+      document.addEventListener("click", (e) => {
+        const add = e.target.closest("[data-add]");
+        if (add) return handleAdd(add.dataset.add);
+        const ed = e.target.closest("[data-edit]");
+        if (ed) return handleEditExp(ed.dataset.edit);
+        const de = e.target.closest("[data-del]");
+        if (de)
+          return handleDel(KEY_EXP, de.dataset.del, defaultExp, renderExp);
+        const eed = e.target.closest("[data-edit-edu]");
+        if (eed) return handleEditEdu(eed.dataset.editEdu);
+        const dee = e.target.closest("[data-del-edu]");
+        if (dee)
+          return handleDel(KEY_EDU, dee.dataset.delEdu, defaultEdu, renderEdu);
+        const sk = e.target.closest("[data-skill-del]");
+        if (sk) {
+          const l = LS.get(KEY_SKILL, defaultSkill).filter(
+            (s) => s !== sk.dataset.skillDel,
+          );
+          LS.set(KEY_SKILL, l);
+          renderSkills();
+        }
+      });
+      function handleAdd(kind) {
+        if (kind === "skill") {
+          const s = prompt("Add a skill");
+          if (!s) return;
+          const l = LS.get(KEY_SKILL, defaultSkill);
+          l.push(s);
+          LS.set(KEY_SKILL, l);
+          renderSkills();
+          return;
+        }
+        if (kind === "exp") {
+          return editExpModal(null);
+        }
+        if (kind === "edu") {
+          return editEduModal(null);
+        }
+      }
+      function editExpModal(id) {
+        const list = LS.get(KEY_EXP, defaultExp);
+        const x = id
+          ? list.find((i) => i.id === id)
+          : { title: "", co: "", dur: "", desc: "" };
+        const wrap = document.createElement("div");
+        wrap.innerHTML = `<label class="field"><span>Title</span><input id="t" value="${x.title}"/></label>
+  <label class="field"><span>Company</span><input id="c" value="${x.co}"/></label>
+  <label class="field"><span>Duration</span><input id="d" value="${x.dur}"/></label>
+  <label class="field"><span>Description</span><input id="ds" value="${x.desc || ""}"/></label>`;
+        const foot = document.createElement("div");
+        foot.innerHTML = `<button class="btn" id="sv">Save</button>`;
+        const m = openModal(wrap, {
+          title: id ? "Edit experience" : "Add experience",
+          footer: foot,
+        });
+        foot.querySelector("#sv").onclick = () => {
+          const o = {
+            id: x.id || "e" + Date.now(),
+            title: wrap.querySelector("#t").value,
+            co: wrap.querySelector("#c").value,
+            dur: wrap.querySelector("#d").value,
+            desc: wrap.querySelector("#ds").value,
+          };
+          const l = id ? list.map((i) => (i.id === id ? o : i)) : [o, ...list];
+          LS.set(KEY_EXP, l);
+          renderExp();
+          m.close();
+          toast("Saved", "success");
+        };
+      }
+      function editEduModal(id) {
+        const list = LS.get(KEY_EDU, defaultEdu);
+        const x = id
+          ? list.find((i) => i.id === id)
+          : { school: "", deg: "", dur: "", desc: "" };
+        const wrap = document.createElement("div");
+        wrap.innerHTML = `<label class="field"><span>School</span><input id="t" value="${x.school}"/></label>
+  <label class="field"><span>Degree</span><input id="c" value="${x.deg}"/></label>
+  <label class="field"><span>Duration</span><input id="d" value="${x.dur}"/></label>`;
+        const foot = document.createElement("div");
+        foot.innerHTML = `<button class="btn" id="sv">Save</button>`;
+        const m = openModal(wrap, {
+          title: id ? "Edit education" : "Add education",
+          footer: foot,
+        });
+        foot.querySelector("#sv").onclick = () => {
+          const o = {
+            id: x.id || "ed" + Date.now(),
+            school: wrap.querySelector("#t").value,
+            deg: wrap.querySelector("#c").value,
+            dur: wrap.querySelector("#d").value,
+          };
+          const l = id ? list.map((i) => (i.id === id ? o : i)) : [o, ...list];
+          LS.set(KEY_EDU, l);
+          renderEdu();
+          m.close();
+          toast("Saved", "success");
+        };
+      }
+      function handleEditExp(id) {
+        editExpModal(id);
+      }
+      function handleEditEdu(id) {
+        editEduModal(id);
+      }
+      function handleDel(key, id, def, rerender) {
+        if (!confirm("Delete?")) return;
+        const l = LS.get(key, def).filter((x) => x.id !== id);
+        LS.set(key, l);
+        rerender();
+        toast("Deleted");
+      }
+    </script>
+  </body>
+</html>
